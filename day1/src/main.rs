@@ -39,5 +39,5 @@ fn main() {
         .zip(list_2.iter())
         .fold(0, |acc, (l1, l2)| acc + l1.abs_diff(*l2));
 
-    println!("Sum: {}", sum);
+    assert_eq!(sum, 3574690);
 }
