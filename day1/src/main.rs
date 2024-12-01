@@ -17,21 +17,15 @@ fn resolve(input_file: String) -> u32 {
     let mut list_1: Vec<u32> = Vec::new();
     let mut list_2: Vec<u32> = Vec::new();
 
-    if let Ok(file) = File::open(&input_file) {
-        let reader = io::BufReader::new(file);
-        for line in reader.lines() {
-            match line {
-                Ok(content) => {
-                    let splitted: Vec<&str> = content.split_ascii_whitespace().collect();
-                    list_1.push(splitted[0].parse().unwrap());
-                    list_2.push(splitted[1].parse().unwrap());
-                }
-                Err(e) => eprintln!("Error reading line: {}", e),
-            }
-        }
-    } else {
-        eprintln!("Could not open file: {}", &input_file);
-    }
+    let file = File::open(&input_file).unwrap();
+    let reader = io::BufReader::new(file);
+
+    reader.lines().for_each(|line| {
+        let content = line.unwrap();
+        let splitted: Vec<&str> = content.split_ascii_whitespace().collect();
+        list_1.push(splitted[0].parse().unwrap());
+        list_2.push(splitted[1].parse().unwrap());
+    });
 
     list_1.sort();
     list_2.sort();
