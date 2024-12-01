@@ -20,7 +20,7 @@ fn main() {
         for line in reader.lines() {
             match line {
                 Ok(content) => {
-                    let splitted: Vec<&str> = content.split("   ").collect();
+                    let splitted: Vec<&str> = content.split_ascii_whitespace().collect();
                     list_1.push(splitted[0].parse().unwrap());
                     list_2.push(splitted[1].parse().unwrap());
                 }
@@ -31,12 +31,13 @@ fn main() {
         eprintln!("Could not open file: {}", args.input_file);
     }
 
-    let min_l1 = list_1.iter().min().unwrap();
-    let min_l2 = list_2.iter().min().unwrap();
+    list_1.sort();
+    list_2.sort();
 
-    let diff = min_l1.abs_diff(*min_l2);
+    let sum = list_1
+        .iter()
+        .zip(list_2.iter())
+        .fold(0, |acc, (l1, l2)| acc + l1.abs_diff(*l2));
 
-    println!("Min of list 1: {}", min_l1);
-    println!("Max of list 2: {}", min_l2);
-    println!("Min difference: {}", diff);
+    println!("Sum: {}", sum);
 }
