@@ -1,3 +1,4 @@
+[![Rust](https://github.com/tylp/advent-of-code-2024/actions/workflows/rust.yml/badge.svg)](https://github.com/tylp/advent-of-code-2024/actions/workflows/rust.yml)
 # Advent of code 2024
 
 Implementation of the advent of code 2024 puzzles in Rust.
