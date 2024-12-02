@@ -10,21 +10,26 @@ struct Args {
 }
 
 fn main() {
-    resolve(Args::parse().input_file);
+    let args = Args::parse();
+    let file = File::open(&args.input_file).unwrap();
+    let reader = io::BufReader::new(file);
+    let mut lines: Vec<String> = Vec::new();
+
+    reader.lines().for_each(|line| {
+        lines.push(line.unwrap());
+    });
+
+    println!("Solution: {:?}", resolve(&lines));
 }
 
-fn resolve(input_file: String) -> u32 {
+fn resolve(lines: &[String]) -> u32 {
     let mut list_1: Vec<u32> = Vec::new();
     let mut list_2: Vec<u32> = Vec::new();
 
-    let file = File::open(&input_file).unwrap();
-    let reader = io::BufReader::new(file);
-
-    reader.lines().for_each(|line| {
-        let content = line.unwrap();
-        let splitted: Vec<&str> = content.split_ascii_whitespace().collect();
-        list_1.push(splitted[0].parse().unwrap());
-        list_2.push(splitted[1].parse().unwrap());
+    lines.iter().for_each(|line| {
+        let splitted: Vec<&str> = line.split_whitespace().collect();
+        list_1.push(splitted[0].parse::<u32>().unwrap());
+        list_2.push(splitted[1].parse::<u32>().unwrap());
     });
 
     list_1.sort();
@@ -44,6 +49,11 @@ mod tests {
 
     #[test]
     fn test_resolve() {
-        assert_eq!(resolve("input".to_string()), 3574690);
+        let lines = vec![
+            "20   17".to_string(),
+            "10   11".to_string(),
+            "0   5".to_string(),
+        ];
+        assert_eq!(resolve(&lines), 9);
     }
 }

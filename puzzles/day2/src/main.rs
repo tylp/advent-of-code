@@ -22,7 +22,7 @@ fn main() {
     println!("Solution: {:?}", resolve(&lines));
 }
 
-fn resolve(lines: &Vec<String>) -> u16 {
+fn resolve(lines: &[String]) -> u16 {
     let report_list = ReportList::from(lines);
 
     report_list.0.iter().fold(
@@ -41,8 +41,8 @@ fn resolve(lines: &Vec<String>) -> u16 {
 struct Report(Vec<u16>);
 struct ReportList(Vec<Report>);
 
-impl From<&Vec<String>> for ReportList {
-    fn from(lines: &Vec<String>) -> Self {
+impl From<&[String]> for ReportList {
+    fn from(lines: &[String]) -> Self {
         ReportList(lines.iter().map(Report::from).collect())
     }
 }
