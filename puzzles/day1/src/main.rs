@@ -67,6 +67,4 @@ mod tests {
         ];
         assert_eq!(resolve(&lines), 9);
     }
-
-    fn test_similarities() {}
 }
