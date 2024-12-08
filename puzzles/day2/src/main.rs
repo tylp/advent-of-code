@@ -19,7 +19,8 @@ fn main() {
         lines.push(line.unwrap());
     });
 
-    println!("Solution: {:?}", resolve(&lines));
+    println!("Solution p1: {:?}", resolve(&lines));
+    println!("Solution p2: {:?}", resolve_dampener(&lines));
 }
 
 fn resolve(lines: &[String]) -> u16 {
@@ -35,6 +36,35 @@ fn resolve(lines: &[String]) -> u16 {
             }
         },
     )
+}
+fn resolve_dampener(lines: &[String]) -> u16 {
+    let report_list = ReportList::from(lines);
+
+    report_list.0.iter().fold(0, |acc, report| {
+        let mut sum = 0;
+
+        if is_report_safe(report) {
+            sum += 1;
+            println!("{:?} - safe", report.0);
+        } else {
+            println!("{:?} - unsafe", report.0);
+            for i in 0..report.0.len() {
+                let mut r = report.0.clone();
+                r.remove(i);
+
+                print!("\t{:?}", r);
+                if is_report_safe(&Report(r)) {
+                    sum += 1;
+                    println!(" - safe, break");
+                    break;
+                } else {
+                    println!(" - unsafe");
+                }
+            }
+        }
+
+        acc + sum
+    })
 }
 
 #[derive(Debug)]
