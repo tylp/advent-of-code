@@ -133,7 +133,14 @@ name = "day4"
 version = "0.1.0"
 dependencies = [
  "clap",
+ "diagonal",
 ]
+
+[[package]]
+name = "diagonal"
+version = "0.1.0"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "6910f3b387cb19ba7e2de01fb201c2c00246327b5960a5271bdf3674618687c0"
 
 [[package]]
 name = "heck"

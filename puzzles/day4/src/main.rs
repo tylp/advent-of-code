@@ -1,4 +1,5 @@
 use clap::Parser;
+use diagonal::{diagonal_pos_neg, diagonal_pos_pos};
 use std::fs::File;
 use std::io::{self, BufRead};
 
@@ -24,10 +25,12 @@ fn main() {
 
 fn resolve(lines: &[String]) -> i32 {
     let mut matrix = matrix(lines);
-    let mut sum = horizontal_count(&matrix);
+    let mut sum = 0;
 
     sum += diagonal(&matrix);
 
+    // Do the horizontal and vertical count
+    sum += horizontal_count(&matrix);
     rotate(&mut matrix);
     sum += horizontal_count(&matrix);
 
@@ -76,7 +79,21 @@ fn horizontal_count(matrix: &Matrix) -> i32 {
 }
 
 fn diagonal(matrix: &Matrix) -> i32 {
-    unimplemented!()
+    let tmp_pos = diagonal_pos_pos(&matrix);
+    let tmp_neg = diagonal_pos_neg(&matrix);
+
+    let diagonal_positive = tmp_pos
+        .iter()
+        .map(|inner| inner.iter().map(|&c| *c).collect());
+    let diagonal_negative = tmp_neg
+        .iter()
+        .map(|inner| inner.iter().map(|&c| *c).collect());
+
+    let mut sum = 0;
+    sum += horizontal_count(&diagonal_positive.collect());
+    sum += horizontal_count(&diagonal_negative.collect());
+
+    sum
 }
 
 #[cfg(test)]
@@ -97,7 +114,7 @@ mod tests {
         ];
 
         let matrix = matrix(&lines);
-        assert_eq!(diagonal(&matrix), 4);
+        assert_eq!(diagonal(&matrix), 2);
     }
 
     #[test]
