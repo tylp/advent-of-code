@@ -40,6 +40,17 @@ fn resolve(lines: &[String]) -> u32 {
         .zip(list_2.iter())
         .fold(0, |acc, (l1, l2)| acc + l1.abs_diff(*l2));
 
+    println!("Sum distance: {:?}", sum);
+
+    let mut similarities = 0;
+    list_1.iter().for_each(|l| {
+        // Find the number of occurences in l2
+        let occurences = list_2.iter().filter(|&x| x == l).count() as u32;
+        similarities += occurences * l;
+    });
+
+    println!("Sum similarities: {:?}", similarities);
+
     sum
 }
 
@@ -56,4 +67,6 @@ mod tests {
         ];
         assert_eq!(resolve(&lines), 9);
     }
+
+    fn test_similarities() {}
 }
