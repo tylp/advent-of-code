@@ -16,10 +16,15 @@ fn main() {
 
     let mut input = String::new();
     reader.read_to_string(&mut input).unwrap();
-    println!("Solution: {:?}", resolve(&input));
+
+    let (part1, part2) = resolve(&input);
+    println!(
+        "#### Solutions ####\n Part 1: {:?}\n Part 2: {:?}",
+        part1, part2
+    );
 }
 
-fn resolve(lines: &str) -> i32 {
+fn resolve(lines: &str) -> (i32, i32) {
     let (mut ordering, updates) = parse_input(lines);
 
     // Sort the rules by the first page number
@@ -28,12 +33,34 @@ fn resolve(lines: &str) -> i32 {
     // Loop through each update and compare indexes n and n+1.
     // Verify that n and n+1 respect the ordering.
     let valid_updates = filter_correct_updates(&ordering, &updates);
+    let sum_valid = sum_middle_pages(&valid_updates);
 
-    sum_middle_pages(&valid_updates)
+    let mut invalid_updates = filter_incorrect_updates(&ordering, &updates);
+    let ordered_updates = order_pages(&ordering, &mut invalid_updates);
+    let sum_invalid = sum_middle_pages(&ordered_updates);
+
+    (sum_valid, sum_invalid)
 }
+
 type PageOrdering = Vec<(i32, i32)>;
 type Update = Vec<i32>;
 type Updates = Vec<Update>;
+
+fn order_pages(rules: &PageOrdering, updates: &mut Updates) -> Updates {
+    updates.iter_mut().for_each(|update| {
+        update.sort_by(|a, b| {
+            // Find rules that apply to a and b
+            let rules_a: Vec<&(i32, i32)> = rules.iter().filter(|(x, _)| x == a).collect();
+            let rules_b: Vec<&(i32, i32)> = rules.iter().filter(|(x, _)| x == b).collect();
+
+            // Compare the rules
+
+            todo!()
+        });
+    });
+
+    unimplemented!()
+}
 
 fn sum_middle_pages(updates: &Updates) -> i32 {
     updates.iter().fold(0, |acc, u| {
@@ -42,6 +69,14 @@ fn sum_middle_pages(updates: &Updates) -> i32 {
 
         acc + value
     })
+}
+
+fn filter_incorrect_updates(rules: &PageOrdering, updates: &Updates) -> Updates {
+    updates
+        .iter()
+        .filter(|update| !is_valid_update(rules, update))
+        .cloned()
+        .collect()
 }
 
 fn filter_correct_updates(rules: &PageOrdering, updates: &Updates) -> Updates {
@@ -112,6 +147,20 @@ fn parse_updates(input: &str) -> Updates {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    fn test_order_pages() {
+        let rules = vec![(1, 2), (1, 5), (2, 5)];
+        let mut updates = vec![
+            vec![1, 2, 5], // valid
+            vec![1, 5, 2], // invalid
+            vec![2, 5, 1], // invalid
+        ];
+
+        let ordered = order_pages(&rules, &mut updates);
+
+        assert_eq!(ordered, vec![vec![1, 2, 5], vec![1, 2, 5], vec![1, 2, 5]]);
+    }
 
     #[test]
     fn test_sum_middle_pages() {
