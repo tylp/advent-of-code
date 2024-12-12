@@ -1,4 +1,5 @@
 use clap::Parser;
+use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, Read};
 
@@ -28,12 +29,18 @@ fn resolve(lines: &str) -> (i32, i32) {
     let stones = parse_input(lines);
     let blink_25 = blink_nth(stones, 25);
 
-    
     (blink_25.len() as i32, 0)
 }
 
+// Cache values for each step. Eg [value, [step, computed value]]
+type Cache = std::collections::HashMap<u64, HashMap<u64, u64>>;
+
 /// Blink a given number of time on the given stones.
 fn blink_nth(stones: Vec<u64>, times: u32) -> Vec<u64> {
+    // TODO: Part 2. Implement a cache to store the result of every value at a given step.
+    // For example:
+    // {value: 125: {2, 253000}} <-- the value 125 gives 253000 when blinekd 2 times.
+    let _cache: Cache = HashMap::new();
 
     let mut s = stones;
     for _ in 0..times {
@@ -45,11 +52,9 @@ fn blink_nth(stones: Vec<u64>, times: u32) -> Vec<u64> {
 
 // Blink and transform the stones by applying the given rules.
 fn blink(stones: Vec<u64>) -> Vec<u64> {
-
     let mut s: Vec<u64> = Vec::new();
 
     stones.iter().for_each(|stone| {
-
         let is_zero = *stone == 0;
         let is_even = stone.to_string().len() % 2 == 0;
 
@@ -63,7 +68,7 @@ fn blink(stones: Vec<u64>) -> Vec<u64> {
             let str = stone.to_string();
             let len = str.len();
             let p1: u64 = str[0..len / 2].parse().unwrap();
-            let p2: u64 = str[len / 2 .. len].parse().unwrap();
+            let p2: u64 = str[len / 2..len].parse().unwrap();
 
             s.push(p1);
             s.push(p2);
@@ -80,8 +85,10 @@ fn blink(stones: Vec<u64>) -> Vec<u64> {
 
 /// Parse the input to return a list of stones
 fn parse_input(lines: &str) -> Vec<u64> {
-    lines.split(" ")
-        .map(|block| block.parse().unwrap()).collect()
+    lines
+        .split(" ")
+        .map(|block| block.parse().unwrap())
+        .collect()
 }
 
 #[cfg(test)]
