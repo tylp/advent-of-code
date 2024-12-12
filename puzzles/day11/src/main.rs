@@ -110,9 +110,4 @@ mod tests {
 
         assert_eq!(blink_nth(input, 2), output);
     }
-
-    #[test]
-    fn test_resolve() {
-        unimplemented!()
-    }
 }
