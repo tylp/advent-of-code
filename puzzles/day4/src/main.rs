@@ -20,7 +20,52 @@ fn main() {
         lines.push(line.unwrap());
     });
 
-    println!("Solution: {:?}", resolve(&lines));
+    println!("Solution p1: {:?}", resolve(&lines));
+    println!("Solution p2: {:?}", resolve_part2(&lines));
+}
+
+// Find all the 'A'.
+// When found check if all diagonals are M or S.
+// If so, check if the diagonal pairs are 'M' and 'S'.
+
+fn resolve_part2(lines: &[String]) -> i32 {
+    let matrix = matrix(lines);
+
+    let mut acc = 0;
+
+    (0..matrix.len()).for_each(|row| {
+        for col in 0..matrix[row].len() {
+            let value = matrix[row][col];
+
+            if value == 'A' && are_diagonals_m_s(&matrix, row, col) {
+                acc += 1;
+            }
+        }
+    });
+
+    acc
+}
+
+fn are_diagonals_m_s(matrix: &Matrix, x: usize, y: usize) -> bool {
+    // Checkbound
+    if x == 0 || y == 0 {
+        return false;
+    }
+
+    if x == matrix.len() - 1 || y == matrix[x].len() - 1 {
+        return false;
+    }
+
+    let top_left = matrix[x - 1][y - 1];
+    let top_right = matrix[x - 1][y + 1];
+    let bottom_left = matrix[x + 1][y - 1];
+    let bottom_right = matrix[x + 1][y + 1];
+
+    check_pair(top_left, bottom_right) && check_pair(top_right, bottom_left)
+}
+
+fn check_pair(c1: char, c2: char) -> bool {
+    c1 == 'M' && c2 == 'S' || c1 == 'S' && c2 == 'M'
 }
 
 fn resolve(lines: &[String]) -> i32 {
@@ -102,7 +147,26 @@ mod tests {
     use crate::horizontal_count;
     use crate::matrix;
     use crate::resolve;
+    use crate::resolve_part2;
     use crate::rotate;
+
+    #[test]
+    fn test_resolve_part2() {
+        let lines = vec![
+            ".M.S......".to_string(),
+            "..A..MSMS.".to_string(),
+            ".M.S.MAA..".to_string(),
+            "..A.ASMSM.".to_string(),
+            ".M.S.M....".to_string(),
+            "..........".to_string(),
+            "S.S.S.S.S.".to_string(),
+            ".A.A.A.A..".to_string(),
+            "M.M.M.M.M.".to_string(),
+            "..........".to_string(),
+        ];
+
+        assert_eq!(resolve_part2(&lines), 9);
+    }
 
     #[test]
     fn test_diagonal() {
