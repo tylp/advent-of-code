@@ -50,8 +50,8 @@ fn order_pages(rules: &PageOrdering, updates: &mut Updates) -> Updates {
     updates.iter_mut().for_each(|update| {
         update.sort_by(|a, b| {
             // Find rules that apply to a and b
-            let _rules_a: Vec<&(i32, i32)> = rules.iter().filter(|(x, _)| x == a).collect();
-            let _rules_b: Vec<&(i32, i32)> = rules.iter().filter(|(x, _)| x == b).collect();
+            let rules_a: Vec<&(i32, i32)> = rules.iter().filter(|(x, _)| x == a).collect();
+            let rules_b: Vec<&(i32, i32)> = rules.iter().filter(|(x, _)| x == b).collect();
 
             // Compare the rules
 
