@@ -2,7 +2,7 @@
 
 # Advent of code
 
-Implementation of the advent of code puzzles in Rust.
+Implementation of the [advent of code puzzles](https://adventofcode.com) in Rust.
 
 ## Running the puzzles
 
