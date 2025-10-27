@@ -1,3 +1,6 @@
 [workspace]
 resolver = "2"
-members = ["puzzles/day1", "puzzles/day11", "puzzles/day2", "puzzles/day3", "puzzles/day4", "puzzles/day5", "puzzles/day6"]
+members = ["2024/*", "2025/*", "aoc"]
+
+[workspace.dependencies]
+clap = { version = "4.5.50", features = ["derive"] }
