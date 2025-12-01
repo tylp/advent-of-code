@@ -62,30 +62,26 @@ impl Safe {
     }
 
     pub fn left(&mut self, distance: i32) {
-        println!("-{distance}");
-        self.advance((self.pins_size + 1 - distance).abs());
+        let len = self.pins_size + 1;
+        let d = ((distance % len) + len) % len;
+        let steps = (len - d) % len;
+        self.advance(steps);
     }
 
     pub fn right(&mut self, distance: i32) {
-        println!("+{distance}");
         self.advance(distance);
     }
 
     pub fn advance(&mut self, distance: i32) {
-        println!("{}", self.dial);
-
         (0..distance).for_each(|_| {
             if let Some(dial) = self.pins.next() {
                 self.dial = dial;
             }
         });
 
-        println!("{}", self.dial);
-
         if self.dial == 0 {
             self.zero_passes += 1;
         }
-        println!("---------------------");
     }
 
     pub fn dial(&self) -> i32 {
@@ -152,5 +148,17 @@ mod tests {
 
         safe.left(10);
         assert_eq!(safe.dial(), 42);
+
+        safe.left(43);
+        assert_eq!(safe.dial(), 99);
+
+        safe.right(99);
+        assert_eq!(safe.dial(), 98);
+
+        safe.right(100);
+        assert_eq!(safe.dial(), 98);
+
+        safe.left(1000);
+        assert_eq!(safe.dial(), 98);
     }
 }
