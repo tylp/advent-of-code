@@ -28,7 +28,8 @@ impl From<String> for Rotation {
 
 struct Safe {
     dial: i32,
-    zero_passes: i32,
+    dial_left_zero: i32,
+    total_pass_zero: i32,
     pins: Cycle<IntoIter<i32>>,
     pins_size: i32,
 }
@@ -48,7 +49,8 @@ impl Safe {
 
         Self {
             dial,
-            zero_passes: 0,
+            dial_left_zero: 0,
+            total_pass_zero: 0,
             pins,
             pins_size,
         }
@@ -75,12 +77,16 @@ impl Safe {
     pub fn advance(&mut self, distance: i32) {
         (0..distance).for_each(|_| {
             if let Some(dial) = self.pins.next() {
+                if dial == 0 {
+                    self.total_pass_zero += 1;
+                }
+
                 self.dial = dial;
             }
         });
 
         if self.dial == 0 {
-            self.zero_passes += 1;
+            self.dial_left_zero += 1;
         }
     }
 
@@ -88,8 +94,12 @@ impl Safe {
         self.dial
     }
 
-    pub fn zero_passes(&self) -> i32 {
-        self.zero_passes
+    pub fn dial_left_zero(&self) -> i32 {
+        self.dial_left_zero
+    }
+
+    pub fn total_pass_zero(&self) -> i32 {
+        self.total_pass_zero
     }
 }
 
@@ -105,9 +115,12 @@ fn main() {
     safe.unlock(rotations);
 
     let final_dial = safe.dial();
-    let zero_passes = safe.zero_passes();
+    let zero_passes = safe.dial_left_zero();
+    let total_pass_zero = safe.total_pass_zero();
 
-    println!("Final dial: {final_dial}. Finished at zero: {zero_passes} times.");
+    println!(
+        "Final dial: {final_dial}. Finished at zero: {zero_passes} times. Passed by zero {total_pass_zero} times"
+    );
 }
 
 #[cfg(test)]
@@ -133,7 +146,7 @@ mod tests {
 
         safe.unlock(rotations);
 
-        assert_eq!(safe.zero_passes(), 3);
+        assert_eq!(safe.dial_left_zero(), 3);
     }
 
     #[test]
