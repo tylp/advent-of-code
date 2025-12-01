@@ -1,9 +1,9 @@
-use std::iter::Cycle;
+use std::{iter::Cycle, vec::IntoIter};
 
 #[derive(Debug, Clone)]
 enum Rotation {
-    Left(u16),
-    Right(u16),
+    Left(i32),
+    Right(i32),
 }
 
 impl From<String> for Rotation {
@@ -13,12 +13,12 @@ impl From<String> for Rotation {
         match (direction, distance) {
             ("L", distance) => Self::Left(
                 distance
-                    .parse::<u16>()
+                    .parse::<i32>()
                     .expect("Left input distance is invalid!"),
             ),
             ("R", distance) => Self::Right(
                 distance
-                    .parse::<u16>()
+                    .parse::<i32>()
                     .expect("Right input distance is invalid!"),
             ),
             (_, _) => panic!("Invalid input!"),
@@ -27,45 +27,72 @@ impl From<String> for Rotation {
 }
 
 struct Safe {
-    dial: u16,
-    pins: Vec<u16>,
-    zero_passes: u16,
+    dial: i32,
+    zero_passes: i32,
+    pins: Cycle<IntoIter<i32>>,
+    pins_size: i32,
 }
 
 impl Safe {
-    pub fn new(dial_start: u16, pins_size: u16) -> Self {
+    pub fn new(dial_start: i32, pins_size: i32) -> Self {
+        let pins: Vec<i32> = (0..=pins_size).collect();
+
+        // Move the iterator (dial) to the init position
+        let mut pins = pins.into_iter().cycle();
+        let mut dial = dial_start;
+        (0..dial_start + 1).for_each(|_| {
+            if let Some(d) = pins.next() {
+                dial = d;
+            }
+        });
+
         Self {
-            dial: dial_start,
-            pins: (0..=pins_size).collect(),
+            dial,
             zero_passes: 0,
+            pins,
+            pins_size,
         }
     }
 
-    pub fn left(&mut self, distance: u16) {
-        let mut cycle = self.pins.iter().rev().cycle();
+    pub fn unlock(&mut self, rotations: Vec<Rotation>) {
+        rotations.iter().for_each(|rotation| match rotation {
+            Rotation::Left(distance) => self.left(*distance),
+            Rotation::Right(distance) => self.right(*distance),
+        });
+    }
 
-        (0..distance + self.dial).for_each(|_| {
-            let _ = cycle.next();
+    pub fn left(&mut self, distance: i32) {
+        println!("-{distance}");
+        self.advance((self.pins_size + 1 - distance).abs());
+    }
+
+    pub fn right(&mut self, distance: i32) {
+        println!("+{distance}");
+        self.advance(distance);
+    }
+
+    pub fn advance(&mut self, distance: i32) {
+        println!("{}", self.dial);
+
+        (0..distance).for_each(|_| {
+            if let Some(dial) = self.pins.next() {
+                self.dial = dial;
+            }
         });
 
-        if let Some(dial) = cycle.next() {
-            self.dial = *dial;
+        println!("{}", self.dial);
+
+        if self.dial == 0 {
+            self.zero_passes += 1;
         }
+        println!("---------------------");
     }
 
-    pub fn right(&mut self, distance: u16) {
-        let mut cycle = self.pins.iter().cycle();
-
-        (0..distance + self.dial).for_each(|_| {
-            let _ = cycle.next();
-        });
-
-        if let Some(dial) = cycle.next() {
-            self.dial = *dial;
-        }
+    pub fn dial(&self) -> i32 {
+        self.dial
     }
 
-    pub fn zero_passes(&self) -> u16 {
+    pub fn zero_passes(&self) -> i32 {
         self.zero_passes
     }
 }
@@ -79,12 +106,12 @@ fn main() {
         .collect();
     let mut safe = Safe::new(50, 99);
 
-    rotations.iter().for_each(|rotation| match rotation {
-        Rotation::Left(distance) => safe.left(*distance),
-        Rotation::Right(distance) => safe.right(*distance),
-    });
+    safe.unlock(rotations);
 
-    println!("{}", safe.zero_passes());
+    let final_dial = safe.dial();
+    let zero_passes = safe.zero_passes();
+
+    println!("Final dial: {final_dial}. Finished at zero: {zero_passes} times.");
 }
 
 #[cfg(test)]
@@ -92,30 +119,38 @@ mod tests {
     use super::*;
 
     #[test]
-    fn test_resolve() {
+    fn test_example() {
         let mut safe = Safe::new(50, 99);
 
-        safe.right(1);
-        assert_eq!(safe.dial, 51);
+        let rotations = vec![
+            Rotation::Left(68),
+            Rotation::Left(30),
+            Rotation::Right(48),
+            Rotation::Left(5),
+            Rotation::Right(60),
+            Rotation::Left(55),
+            Rotation::Left(1),
+            Rotation::Left(99),
+            Rotation::Right(14),
+            Rotation::Left(82),
+        ];
 
-        safe.right(1);
-        assert_eq!(safe.dial, 52);
+        safe.unlock(rotations);
 
-        safe.left(10);
-        assert_eq!(safe.dial, 42);
+        assert_eq!(safe.zero_passes(), 3);
     }
 
     #[test]
-    fn test_cycle() {
-        let a = [1, 2, 3];
+    fn test_left_right() {
+        let mut safe = Safe::new(50, 99);
 
-        let mut iter = a.into_iter().rev().cycle();
+        safe.right(1);
+        assert_eq!(safe.dial(), 51);
 
-        assert_eq!(iter.next(), Some(3));
-        assert_eq!(iter.next(), Some(2));
-        assert_eq!(iter.next(), Some(1));
-        assert_eq!(iter.next(), Some(3));
-        assert_eq!(iter.next(), Some(2));
-        assert_eq!(iter.next(), Some(1));
+        safe.right(1);
+        assert_eq!(safe.dial(), 52);
+
+        safe.left(10);
+        assert_eq!(safe.dial(), 42);
     }
 }
