@@ -51,65 +51,24 @@ impl Safe {
     }
 
     pub fn left(&mut self, distance: i32) {
-        let mut iter = self.pins.iter().rev().cycle();
+        let mut iter = self.pins.iter().copied().rev().cycle();
         let len = self.pins.len();
-        let dial = self.dial;
-        // Move the iterator to the dial position
-        for _ in 0..len {
-            if let Some(pin) = iter.next()
-                && *pin == dial
-            {
-                break;
-            }
-        }
+        let dial = &mut self.dial;
+        let times = &mut self.times_passed_through_zero;
+        let stopped = &mut self.dial_stopped_at_zero;
 
-        // Then move for the given distance
-        (0..distance).for_each(|step| {
-            if let Some(pin) = iter.next() {
-                // we are at zero AND there are steps remaining
-                if *pin == 0 && step != distance {
-                    self.times_passed_through_zero += 1;
-                }
-
-                self.dial = *pin;
-            }
-        });
-
-        // Check if the dial is at zero
-        if self.dial == 0 {
-            self.dial_stopped_at_zero += 1;
-        }
+        rotate(distance, &mut iter, dial, len, times, stopped);
     }
 
     pub fn right(&mut self, distance: i32) {
-        let mut iter = self.pins.iter().cycle();
+        let mut iter = self.pins.iter().copied().cycle();
+
         let len = self.pins.len();
-        let dial = self.dial;
-        // Move the iterator to the dial position
-        for _ in 0..len {
-            if let Some(pin) = iter.next()
-                && *pin == dial
-            {
-                break;
-            }
-        }
+        let dial = &mut self.dial;
+        let times = &mut self.times_passed_through_zero;
+        let stopped = &mut self.dial_stopped_at_zero;
 
-        // Then move for the given distance
-        (0..distance).for_each(|step| {
-            if let Some(pin) = iter.next() {
-                // we are at zero AND there are steps remaining
-                if *pin == 0 && step != distance {
-                    self.times_passed_through_zero += 1;
-                }
-
-                self.dial = *pin;
-            }
-        });
-
-        // Check if the dial is at zero
-        if self.dial == 0 {
-            self.dial_stopped_at_zero += 1;
-        }
+        rotate(distance, &mut iter, dial, len, times, stopped);
     }
 
     pub fn dial(&self) -> i32 {
@@ -122,6 +81,43 @@ impl Safe {
 
     pub fn times_passed_through_zero(&self) -> i32 {
         self.times_passed_through_zero
+    }
+}
+
+fn rotate<I>(
+    distance: i32,
+    iter: &mut I,
+    dial: &mut i32,
+    len: usize,
+    times_passed_through_zero: &mut i32,
+    dial_stopped_at_zero: &mut i32,
+) where
+    I: Iterator<Item = i32>,
+{
+    // Move the iterator to the dial position
+    for _ in 0..len {
+        if let Some(pin) = iter.next()
+            && pin == *dial
+        {
+            break;
+        }
+    }
+
+    // Then move for the given distance
+    (0..distance).for_each(|step| {
+        if let Some(pin) = iter.next() {
+            // we are at zero AND there are steps remaining
+            if pin == 0 && step != distance {
+                *times_passed_through_zero += 1;
+            }
+
+            *dial = pin;
+        }
+    });
+
+    // Check if the dial is at zero
+    if *dial == 0 {
+        *dial_stopped_at_zero += 1;
     }
 }
 
