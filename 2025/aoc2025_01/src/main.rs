@@ -1,5 +1,3 @@
-use std::{iter::Cycle, vec::IntoIter};
-
 #[derive(Debug, Clone)]
 enum Rotation {
     Left(i32),
@@ -28,31 +26,20 @@ impl From<String> for Rotation {
 
 struct Safe {
     dial: i32,
-    dial_left_zero: i32,
-    total_pass_zero: i32,
-    pins: Cycle<IntoIter<i32>>,
-    pins_size: i32,
+    dial_stopped_at_zero: i32,
+    times_passed_through_zero: i32,
+    pins: Vec<i32>,
 }
 
 impl Safe {
     pub fn new(dial_start: i32, pins_size: i32) -> Self {
         let pins: Vec<i32> = (0..=pins_size).collect();
 
-        // Move the iterator (dial) to the init position
-        let mut pins = pins.into_iter().cycle();
-        let mut dial = dial_start;
-        (0..dial_start + 1).for_each(|_| {
-            if let Some(d) = pins.next() {
-                dial = d;
-            }
-        });
-
         Self {
-            dial,
-            dial_left_zero: 0,
-            total_pass_zero: 0,
+            dial: dial_start,
+            dial_stopped_at_zero: 0,
+            times_passed_through_zero: 0,
             pins,
-            pins_size,
         }
     }
 
@@ -64,29 +51,64 @@ impl Safe {
     }
 
     pub fn left(&mut self, distance: i32) {
-        let len = self.pins_size + 1;
-        let d = ((distance % len) + len) % len;
-        let steps = (len - d) % len;
-        self.advance(steps);
-    }
+        let mut iter = self.pins.iter().rev().cycle();
+        let len = self.pins.len();
+        let dial = self.dial;
+        // Move the iterator to the dial position
+        for _ in 0..len {
+            if let Some(pin) = iter.next()
+                && *pin == dial
+            {
+                break;
+            }
+        }
 
-    pub fn right(&mut self, distance: i32) {
-        self.advance(distance);
-    }
-
-    pub fn advance(&mut self, distance: i32) {
-        (0..distance).for_each(|_| {
-            if let Some(dial) = self.pins.next() {
-                if dial == 0 {
-                    self.total_pass_zero += 1;
+        // Then move for the given distance
+        (0..distance).for_each(|step| {
+            if let Some(pin) = iter.next() {
+                // we are at zero AND there are steps remaining
+                if *pin == 0 && step != distance {
+                    self.times_passed_through_zero += 1;
                 }
 
-                self.dial = dial;
+                self.dial = *pin;
             }
         });
 
+        // Check if the dial is at zero
         if self.dial == 0 {
-            self.dial_left_zero += 1;
+            self.dial_stopped_at_zero += 1;
+        }
+    }
+
+    pub fn right(&mut self, distance: i32) {
+        let mut iter = self.pins.iter().cycle();
+        let len = self.pins.len();
+        let dial = self.dial;
+        // Move the iterator to the dial position
+        for _ in 0..len {
+            if let Some(pin) = iter.next()
+                && *pin == dial
+            {
+                break;
+            }
+        }
+
+        // Then move for the given distance
+        (0..distance).for_each(|step| {
+            if let Some(pin) = iter.next() {
+                // we are at zero AND there are steps remaining
+                if *pin == 0 && step != distance {
+                    self.times_passed_through_zero += 1;
+                }
+
+                self.dial = *pin;
+            }
+        });
+
+        // Check if the dial is at zero
+        if self.dial == 0 {
+            self.dial_stopped_at_zero += 1;
         }
     }
 
@@ -94,12 +116,12 @@ impl Safe {
         self.dial
     }
 
-    pub fn dial_left_zero(&self) -> i32 {
-        self.dial_left_zero
+    pub fn dial_stopped_at_zero(&self) -> i32 {
+        self.dial_stopped_at_zero
     }
 
-    pub fn total_pass_zero(&self) -> i32 {
-        self.total_pass_zero
+    pub fn times_passed_through_zero(&self) -> i32 {
+        self.times_passed_through_zero
     }
 }
 
@@ -115,8 +137,8 @@ fn main() {
     safe.unlock(rotations);
 
     let final_dial = safe.dial();
-    let zero_passes = safe.dial_left_zero();
-    let total_pass_zero = safe.total_pass_zero();
+    let zero_passes = safe.dial_stopped_at_zero();
+    let total_pass_zero = safe.times_passed_through_zero();
 
     println!(
         "Final dial: {final_dial}. Finished at zero: {zero_passes} times. Passed by zero {total_pass_zero} times"
@@ -146,7 +168,8 @@ mod tests {
 
         safe.unlock(rotations);
 
-        assert_eq!(safe.dial_left_zero(), 3);
+        assert_eq!(safe.dial_stopped_at_zero(), 3);
+        assert_eq!(safe.times_passed_through_zero(), 6);
     }
 
     #[test]
