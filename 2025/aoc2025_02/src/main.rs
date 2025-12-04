@@ -16,46 +16,98 @@ fn main() {
         .collect();
 
     let result = solve(ranges);
-    println!("Invalid IDs sum is {result}.");
+    println!("Invalid IDs sum is {:?}.", result);
 }
 
 // take the ranges and reduce them to return the sum of all the invalid ids
-fn solve(ranges: Vec<Range>) -> u64 {
-    let res: Option<(u64, Vec<u64>)> = ranges
+fn solve(ranges: Vec<Range>) -> (u64, u64) {
+    let res: Option<(u64, u64)> = ranges
         .iter()
         .map(invalid_ids_in_range)
-        .reduce(|acc, e| (acc.0 + e.0, [acc.1, e.1].concat()));
+        .reduce(|acc, e| (acc.0 + e.0, acc.1 + e.1));
 
-    if let Some((res, _ids)) = res {
-        return res;
+    if let Some((sum_twice, sum_at_least_twice)) = res {
+        return (sum_twice, sum_at_least_twice);
     }
 
-    0
+    (0, 0)
 }
 
-// Takes a range a return a tuple containing the sum of invalid ids in this range as well as the ids.
-fn invalid_ids_in_range(range: &Range) -> (u64, Vec<u64>) {
-    let invalid_ids: Vec<u64> = range
+// Takes a range a return a tuple containing the sum of ids repeating exactly twice, and the sum
+// of ids repeating at least twice.
+fn invalid_ids_in_range(range: &Range) -> (u64, u64) {
+    let mut sum_repeating_twice = 0;
+    let mut sum_repeating_at_least_twice = 0;
+
+    let ids_repeating_twice: Vec<u64> = range
         .iter()
         .copied()
-        .filter(|id| id_repeat_twice(*id))
+        .filter(|id| repeat_exactly_twice(*id))
         .collect();
 
-    if invalid_ids.is_empty() {
-        return (0, vec![]);
-    }
-
-    let sum = invalid_ids
+    let ids_repeating_at_least_twice: Vec<u64> = range
         .iter()
         .copied()
-        .reduce(|acc, e| acc + e)
-        .expect("Failed to reduce sum");
+        .filter(|id| repeat_at_least_twice(*id))
+        .collect();
 
-    (sum, invalid_ids)
+    if !ids_repeating_twice.is_empty() {
+        sum_repeating_twice = ids_repeating_twice
+            .iter()
+            .copied()
+            .reduce(|acc, e| acc + e)
+            .expect("Failed to reduce sum");
+    }
+
+    if !ids_repeating_at_least_twice.is_empty() {
+        sum_repeating_at_least_twice = ids_repeating_at_least_twice
+            .iter()
+            .copied()
+            .reduce(|acc, e| acc + e)
+            .expect("Failed to reduce sum");
+    }
+
+    (sum_repeating_twice, sum_repeating_at_least_twice)
+}
+
+fn repeat_at_least_twice(id: u64) -> bool {
+    let str = id.to_string();
+
+    if str.len() <= 1 {
+        return false;
+    }
+
+    // If the number is of pair length, we can check at most half its size by chunk.
+    // If its not pair, at most half its size - 1.
+    let max_chunk_size = match str.len() % 2 {
+        0 => str.len() / 2,
+        _ => (str.len() - 1) / 2,
+    };
+
+    let chunk_sizes_to_check: Vec<usize> = (1..=max_chunk_size).collect();
+
+    for chunk_size in chunk_sizes_to_check {
+        // Split the str into parts of chunk_size length and check if they are all the same
+        let chunks: Vec<&str> = str
+            .as_bytes()
+            .chunks(chunk_size)
+            .map(|chunk| str::from_utf8(chunk).expect("Failed to parse chunk to utf8"))
+            .collect();
+
+        let first_chunk = chunks.first();
+        let all_equals = first_chunk.map(|first| chunks.iter().all(|c| c == first));
+
+        if let Some(true) = all_equals {
+            // This id repeats the first_chunk at least twice !
+            return true;
+        }
+    }
+
+    false
 }
 
 /// Takes an ind and returns wether it is invalid (true) or not (false).
-fn id_repeat_twice(id: u64) -> bool {
+fn repeat_exactly_twice(id: u64) -> bool {
     let str = id.to_string();
 
     // Since we're looking for a sequence of digits repeated *twice*,
@@ -76,55 +128,72 @@ fn id_repeat_twice(id: u64) -> bool {
 
 #[cfg(test)]
 mod tests {
-    use crate::{id_repeat_twice, invalid_ids_in_range, solve};
+    use crate::{invalid_ids_in_range, repeat_at_least_twice, repeat_exactly_twice, solve};
 
     #[test]
-    fn test_id_repeat_at_least_twice() {}
+    fn test_id_repeat_at_least_twice() {
+        assert!(repeat_at_least_twice(111));
+        assert!(repeat_at_least_twice(999));
+        assert!(repeat_at_least_twice(565656));
+        assert!(repeat_at_least_twice(824824824));
+        assert!(repeat_at_least_twice(2121212121));
+
+        assert!(!repeat_at_least_twice(10123));
+    }
 
     #[test]
     fn test_id_repeat_twice() {
-        assert!(id_repeat_twice(11));
-        assert!(id_repeat_twice(1010));
-        assert!(id_repeat_twice(1188511885));
-        assert!(id_repeat_twice(222222));
-        assert!(id_repeat_twice(446446));
+        assert!(repeat_exactly_twice(11));
+        assert!(repeat_exactly_twice(1010));
+        assert!(repeat_exactly_twice(1188511885));
+        assert!(repeat_exactly_twice(222222));
+        assert!(repeat_exactly_twice(446446));
 
-        assert!(!id_repeat_twice(446445));
-        assert!(!id_repeat_twice(0));
-        assert!(!id_repeat_twice(1));
-        assert!(!id_repeat_twice(993));
+        assert!(!repeat_exactly_twice(446445));
+        assert!(!repeat_exactly_twice(0));
+        assert!(!repeat_exactly_twice(1));
+        assert!(!repeat_exactly_twice(993));
     }
 
     #[test]
     fn test_invalid_ids_in_range() {
-        assert_eq!(
-            invalid_ids_in_range(&(11..=22).collect()),
-            (33, vec![11, 22])
-        );
-        assert_eq!(invalid_ids_in_range(&(95..=115).collect()), (99, vec![99]));
+        assert_eq!(invalid_ids_in_range(&(11..=22).collect()), (33, 33));
+        assert_eq!(invalid_ids_in_range(&(95..=115).collect()), (99, 99 + 111));
         assert_eq!(
             invalid_ids_in_range(&(998..=1012).collect()),
-            (1010, vec![1010])
+            (1010, 999 + 1010)
         );
         assert_eq!(
             invalid_ids_in_range(&(1188511880..=1188511890).collect()),
-            (1188511885, vec![1188511885])
+            (1188511885, 1188511885)
         );
         assert_eq!(
             invalid_ids_in_range(&(222220..=222224).collect()),
-            (222222, vec![222222])
+            (222222, 222222)
         );
-        assert_eq!(
-            invalid_ids_in_range(&(1698522..=1698528).collect()),
-            (0, vec![])
-        );
+        assert_eq!(invalid_ids_in_range(&(1698522..=1698528).collect()), (0, 0));
         assert_eq!(
             invalid_ids_in_range(&(446443..=446449).collect()),
-            (446446, vec![446446])
+            (446446, 446446)
         );
         assert_eq!(
             invalid_ids_in_range(&(38593856..=38593862).collect()),
-            (38593859, vec![38593859])
+            (38593859, 38593859)
+        );
+
+        assert_eq!(
+            invalid_ids_in_range(&(565653..=565659).collect()),
+            (0, 565656)
+        );
+
+        assert_eq!(
+            invalid_ids_in_range(&(824824821..=824824827).collect()),
+            (0, 824824824)
+        );
+
+        assert_eq!(
+            invalid_ids_in_range(&(2121212118..=2121212124).collect()),
+            (0, 2121212121)
         );
     }
 
@@ -139,8 +208,11 @@ mod tests {
             (1698522..=1698528).collect(),
             (446443..=446449).collect(),
             (38593856..=38593862).collect(),
+            (565653..=565659).collect(),
+            (824824821..=824824827).collect(),
+            (2121212118..=2121212124).collect(),
         ];
 
-        assert_eq!(solve(ranges), 1227775554);
+        assert_eq!(solve(ranges), (1227775554, 4174379265));
     }
 }
