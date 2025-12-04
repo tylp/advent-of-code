@@ -79,9 +79,9 @@ fn repeat_at_least_twice(id: u64) -> bool {
 
     // If the number is of pair length, we can check at most half its size by chunk.
     // If its not pair, at most half its size - 1.
-    let max_chunk_size = match str.len() % 2 {
-        0 => str.len() / 2,
-        _ => (str.len() - 1) / 2,
+    let max_chunk_size = match str.len().is_multiple_of(2) {
+        true => str.len() / 2,
+        false => (str.len() - 1) / 2,
     };
 
     let chunk_sizes_to_check: Vec<usize> = (1..=max_chunk_size).collect();
@@ -112,7 +112,7 @@ fn repeat_exactly_twice(id: u64) -> bool {
 
     // Since we're looking for a sequence of digits repeated *twice*,
     // we filter-out digits that does not have a pair length.
-    if str.len() % 2 != 0 || str.is_empty() {
+    if !str.len().is_multiple_of(2) || str.is_empty() {
         return false;
     }
 
