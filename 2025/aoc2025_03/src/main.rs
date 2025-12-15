@@ -21,26 +21,6 @@ impl BatteryBank {
         Self { batteries }
     }
 
-    /// Find the largest possible voltage for the bank by finding the two
-    /// highest values with preserved order.
-    pub fn largest_possible_two_digit_joltage(&self) -> u64 {
-        let mut best = 0u64;
-        let len = self.batteries.len();
-
-        let digits: Vec<u64> = self.batteries.iter().map(|b| b.joltage).collect();
-
-        for i in 0..len {
-            for j in (i + 1)..len {
-                let val = digits[i] * 10 + digits[j];
-                if val > best {
-                    best = val;
-                }
-            }
-        }
-
-        best
-    }
-
     /// Return the largest possible joltage for the bank by turning on
     /// a given number of digits.
     ///
@@ -52,10 +32,37 @@ impl BatteryBank {
     /// - **8**1111111111111**9** returns 89 on two digits.
     /// - **81111111111**111**9** returns 89 on two digits.
     ///
-    pub fn larget_possible_joltage_for_digits(&self, digits: u64) -> u64 {
+    pub fn largest_possible_joltage_for_digits(&self, digits: usize) -> u64 {
         let joltages: Vec<u64> = self.batteries.iter().map(|b| b.joltage).collect();
 
-        todo!()
+        if digits == 0 || joltages.is_empty() {
+            return 0;
+        }
+
+        let mut to_remove = joltages.len() - digits;
+        let mut stack = Vec::new();
+
+        for joltage in joltages {
+            while to_remove > 0 {
+                match stack.last() {
+                    Some(&last) if last < joltage => {
+                        stack.pop();
+                        to_remove -= 1;
+                    }
+                    _ => break,
+                }
+            }
+            stack.push(joltage);
+        }
+
+        if to_remove > 0 {
+            let new_len = stack.len() - to_remove;
+            stack.truncate(new_len);
+        }
+
+        stack.truncate(digits);
+
+        stack.into_iter().fold(0, |acc, e| acc * 10 + e)
     }
 }
 
@@ -77,41 +84,46 @@ fn main() {
         .map(|line| BatteryBank::from(line.as_str()))
         .collect();
 
-    let total_output = banks
+    let two_digits_output = banks
         .iter()
-        .fold(0, |acc, e| acc + e.largest_possible_two_digit_joltage());
+        .fold(0, |acc, e| acc + e.largest_possible_joltage_for_digits(2));
 
-    println!("Total output of the banks: {total_output}");
+    let twelve_digits_output = banks
+        .iter()
+        .fold(0, |acc, e| acc + e.largest_possible_joltage_for_digits(12));
+
+    println!("Two digits output: {two_digits_output}");
+    println!("Twelve digits output: {twelve_digits_output}");
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::{Battery, BatteryBank};
+    use crate::BatteryBank;
 
     #[test]
     fn test_example() {
         let bank = BatteryBank::from("987654321111111");
-        assert_eq!(bank.larget_possible_joltage_for_digits(2), 98);
+        assert_eq!(bank.largest_possible_joltage_for_digits(2), 98);
 
         let bank = BatteryBank::from("811111111111119");
-        assert_eq!(bank.larget_possible_joltage_for_digits(2), 89);
+        assert_eq!(bank.largest_possible_joltage_for_digits(2), 89);
 
         let bank = BatteryBank::from("234234234234278");
-        assert_eq!(bank.larget_possible_joltage_for_digits(2), 78);
+        assert_eq!(bank.largest_possible_joltage_for_digits(2), 78);
 
         let bank = BatteryBank::from("818181911112111");
-        assert_eq!(bank.larget_possible_joltage_for_digits(2), 92);
+        assert_eq!(bank.largest_possible_joltage_for_digits(2), 92);
 
         let bank = BatteryBank::from("987654321111111");
-        assert_eq!(bank.larget_possible_joltage_for_digits(12), 987654321111);
+        assert_eq!(bank.largest_possible_joltage_for_digits(12), 987654321111);
 
         let bank = BatteryBank::from("811111111111119");
-        assert_eq!(bank.larget_possible_joltage_for_digits(12), 811111111119);
+        assert_eq!(bank.largest_possible_joltage_for_digits(12), 811111111119);
 
         let bank = BatteryBank::from("234234234234278");
-        assert_eq!(bank.larget_possible_joltage_for_digits(12), 434234234278);
+        assert_eq!(bank.largest_possible_joltage_for_digits(12), 434234234278);
 
         let bank = BatteryBank::from("818181911112111");
-        assert_eq!(bank.larget_possible_joltage_for_digits(12), 888911112111);
+        assert_eq!(bank.largest_possible_joltage_for_digits(12), 888911112111);
     }
 }
