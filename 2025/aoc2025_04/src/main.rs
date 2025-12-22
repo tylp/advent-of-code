@@ -14,6 +14,15 @@ impl From<char> for Item {
     }
 }
 
+impl From<&Item> for char {
+    fn from(val: &Item) -> Self {
+        match val {
+            Item::Roll => '@',
+            Item::Space => '.',
+        }
+    }
+}
+
 struct Input(Vec<String>);
 
 /// Matrix is organized by rows first, then colums.
@@ -34,11 +43,13 @@ impl From<Input> for Matrix {
 
 fn main() {
     let lines = Input(aoc::init());
-    let matrix = Matrix::from(lines);
+    let mut matrix = Matrix::from(lines);
 
-    let accessible_rolls_4 = count_accessible_rolls(4, &matrix);
+    let accessible_rolls = count_accessible_rolls(4, &matrix);
+    let removable_rolls = count_removable_rolls(4, &mut matrix);
 
-    println!("[Part 1] There are {accessible_rolls_4} accessible rolls. ");
+    println!("[Part 1] There are {accessible_rolls} accessible rolls.");
+    println!("[Part 2] There are {removable_rolls} removable rolls.");
 }
 
 /// Returns the number of accessible rolls in a grid.
@@ -82,7 +93,44 @@ fn count_accessible_rolls(threshold: u16, matrix: &Matrix) -> usize {
     })
 }
 
-// Check wether the cell is accessible
+/// Count the removable rolls.
+fn count_removable_rolls(threshold: u16, matrix: &mut Matrix) -> usize {
+    let mut removed = 0;
+    let mut rolls_to_remove: Vec<(usize, usize)> = Vec::new();
+
+    while count_accessible_rolls(threshold, matrix) != 0 {
+        // Transform the cached rolls into spaces and empty the cache
+        rolls_to_space(&rolls_to_remove, matrix);
+        rolls_to_remove = Vec::new();
+
+        // Count the accessible rolls in the current matrix.
+        matrix.iter().enumerate().for_each(|(row, items)| {
+            items.iter().enumerate().for_each(|(col, item)| {
+                // If it is accessible, we remove it for the next iteration
+                if *item == Item::Roll && is_roll_accessible(row, col, threshold, matrix) {
+                    rolls_to_remove.push((row, col));
+                    removed += 1;
+                }
+            });
+        });
+    }
+
+    removed
+}
+
+/// Change the given rolls into space in the Matrix.
+fn rolls_to_space(rolls: &Vec<(usize, usize)>, matrix: &mut Matrix) {
+    for (row, col) in rolls {
+        // find the associated item and swap it into space
+        if let Some(items) = matrix.get_mut(*row)
+            && let Some(item) = items.get_mut(*col)
+        {
+            *item = Item::Space;
+        }
+    }
+}
+
+// Check wether the cell is accessible and returns a tuple containing wether it is accessible and its coordinates.
 fn is_roll_accessible(row: usize, col: usize, threshold: u16, matrix: &Matrix) -> bool {
     // Guard the negative value on usize
     let previous_row = match row {
@@ -146,41 +194,10 @@ fn extract_item_from_matrix(row: usize, col: usize, matrix: &Matrix) -> Option<&
 
 #[cfg(test)]
 mod tests {
-    use crate::{Input, Matrix, count_accessible_rolls};
+    use crate::{Input, Matrix, count_accessible_rolls, count_removable_rolls};
 
     #[test]
-    fn count_accessible_rolls_2b2() {
-        let matrix = Matrix::from(Input(vec!["@.".into(), ".@".into()]));
-
-        assert_eq!(count_accessible_rolls(4, &matrix), 2);
-    }
-
-    /// Test the part 1 example.
-    ///
-    /// ..@@.@@@@.
-    /// @@@.@.@.@@
-    /// @@@@@.@.@@
-    /// @.@@@@..@.
-    /// @@.@@@@.@@
-    /// .@@@@@@@.@
-    /// .@.@.@.@@@
-    /// @.@@@.@@@@
-    /// .@@@@@@@@.
-    /// @.@.@@@.@
-    ///
-    /// ..xx.xx@x.
-    /// x@@.@.@.@@
-    /// @@@@@.x.@@
-    /// @.@@@@..@.
-    /// x@.@@@@.@x
-    /// .@@@@@@@.@
-    /// .@.@.@.@@@
-    /// x.@@@.@@@@
-    /// .@@@@@@@@.
-    /// x.x.@@@.x.
-    #[test]
-    fn count_accessible_rolls_with_threshold_of_4_example() {
-        let threshold = 4;
+    fn count_accessible_rolls_test() {
         let matrix = Matrix::from(Input(vec![
             "..@@.@@@@.".into(),
             "@@@.@.@.@@".into(),
@@ -194,6 +211,24 @@ mod tests {
             "@.@.@@@.@".into(),
         ]));
 
-        assert_eq!(count_accessible_rolls(threshold, &matrix), 13);
+        assert_eq!(count_accessible_rolls(4, &matrix), 13);
+    }
+
+    #[test]
+    fn count_removable_rolls_test() {
+        let mut matrix = Matrix::from(Input(vec![
+            "..@@.@@@@.".into(),
+            "@@@.@.@.@@".into(),
+            "@@@@@.@.@@".into(),
+            "@.@@@@..@.".into(),
+            "@@.@@@@.@@".into(),
+            ".@@@@@@@.@".into(),
+            ".@.@.@.@@@".into(),
+            "@.@@@.@@@@".into(),
+            ".@@@@@@@@.".into(),
+            "@.@.@@@.@".into(),
+        ]));
+
+        assert_eq!(count_removable_rolls(4, &mut matrix), 43);
     }
 }
