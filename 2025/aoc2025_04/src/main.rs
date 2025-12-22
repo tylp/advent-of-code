@@ -107,25 +107,6 @@ fn is_roll_accessible(row: usize, col: usize, threshold: u16, matrix: &Matrix) -
         (row + 1, col + 1),           // Bottom-right
     ];
 
-    // Example with
-    // [R S]
-    // [S R]
-    //
-    // We first test at 0,0
-    // Then we want to check
-    // 		(0, 0), 	// Top-left
-    //      (0, 0), 			// Top-center
-    //      (0, 1), 		// Top-right
-    //      (0, 0),			// Middle-left
-    //      // Ignore self cell
-    //      // (row, col),					// Middle-center
-    //      (0, 1),					// Middle-right
-    //      (1, 0),		// Bottom-left
-    //      (1, 0),					// Bottom-center
-    //      (1, 1),				// Bottom-right
-    //
-    // So in reality, we check (0,0) 3 times, (0,1) two times, (1,0) two times and (1,1) once.
-    // With this we get 3 hit in (0,0) + 1 hit in (1,1) = 4 hit instead of 2.
     // We actually have to remove duplicates.
     let mut uniques: Vec<(usize, usize)> = Vec::new();
     cells_to_check.iter().for_each(|cell| {
@@ -134,12 +115,11 @@ fn is_roll_accessible(row: usize, col: usize, threshold: u16, matrix: &Matrix) -
         }
     });
 
-    // Once we reduced it to (0,0), (0,1), (1,0), (1,1)
     // Retreive only the cells that are within the matrix bounds and counts the items
     // that are Rolls.
-    let rolls_in_range = cells_to_check
+    let rolls_in_range = uniques
         .iter()
-        .filter(|cell| cell.0 != row && cell.1 != col) // Filter out self cell
+        .filter(|cell| **cell != (row, col)) // Filter out self cell
         .fold(0, |acc, e| {
             if let Some(item) = extract_item_from_matrix(e.0, e.1, matrix)
                 && *item == Item::Roll
