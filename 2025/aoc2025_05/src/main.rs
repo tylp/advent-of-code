@@ -1,3 +1,5 @@
+use std::collections::HashSet;
+
 fn main() {
     let lines = aoc::init();
 
@@ -13,6 +15,12 @@ fn main() {
 
     let number_of_fresh_ingredient_ids = recipe.count_fresh_ingredients_ids();
     println!("Number of fresh ingredient ids is {number_of_fresh_ingredient_ids}");
+
+    let number_of_fresh_ingredient_ids_from_range =
+        recipe.count_fresh_ingredients_ids_from_ranges();
+    println!(
+        "Number of fresh ingredient ids from range is {number_of_fresh_ingredient_ids_from_range}"
+    );
 }
 
 struct Recipe<'a> {
@@ -21,6 +29,7 @@ struct Recipe<'a> {
 }
 
 impl<'a> Recipe<'a> {
+    /// Counts the number of ingredients that are fresh (i.e that are in the ingredient list).
     fn count_fresh_ingredients_ids(&self) -> usize {
         let mut fresh_ingredients = 0u64;
 
@@ -51,11 +60,66 @@ impl<'a> Recipe<'a> {
 
         fresh_ingredients as usize
     }
+
+    /// Count the fresh ingredients IDs only from the specified ranges, not
+    /// including the list of ingredients.
+    fn count_fresh_ingredients_ids_from_ranges(&self) -> usize {
+        let mut min_visited = 0u64;
+        let mut max_visited = 0u64;
+        let mut fresh_ingredients: HashSet<u64> = HashSet::new();
+
+        for range in self.ranges {
+            println!("Checking range {range}");
+            let ranges: Vec<&str> = range.split("-").collect();
+            let range_start = ranges
+                .first()
+                .expect("Failed to get range start")
+                .parse::<u64>()
+                .expect("Failed to parse range start");
+            let range_end = ranges
+                .last()
+                .expect("Failed to get range end")
+                .parse::<u64>()
+                .expect("Failed to parse range end");
+
+            // First iteration
+            if min_visited == 0 {
+                min_visited = range_start;
+            }
+
+            if range_start < min_visited {
+                min_visited = range_start;
+            }
+
+            if range_end > max_visited {
+                max_visited = range_end;
+            }
+        }
+
+        println!("Min visited is {min_visited}. Max visited is {max_visited}.");
+
+		
+        (max_visited - min_visited).try_into().unwrap()
+    }
 }
 
 #[cfg(test)]
 mod tests {
     use crate::Recipe;
+
+    #[test]
+    fn count_fresh_ingredients_ids_from_ranges_test() {
+        let ranges = ["3-5", "10-14", "16-20", "12-18"].map(str::to_string);
+        let ingredients = ["1", "5", "8", "11", "17", "32"].map(str::to_string);
+
+        let recipe = Recipe {
+            ranges: &ranges,
+            ingredients: &ingredients,
+        };
+
+        let fresh = recipe.count_fresh_ingredients_ids_from_ranges();
+        assert_eq!(fresh, 14);
+    }
 
     /// Test the part 1 example with the following input :
     /// 3-5
